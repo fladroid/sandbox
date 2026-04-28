@@ -72,7 +72,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
 .bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
 .bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.5s ease, background 0.4s; }
 .sim-desc { font-size: 12px; color: var(--muted); font-family: var(--mono); }
-.vecs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vecs-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 .vec-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
 .vec-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
 .vec-dims { color: var(--accent); }
@@ -82,7 +82,8 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
 .vec-stats b { color: var(--text); }
 .diff-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
 .diff-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
-.diff-vis { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 2px; }
+.diff-vis { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 2px; align-content: flex-start; }
+.diff-cell { width: 7px; height: 16px; border-radius: 2px; flex-shrink: 0; cursor: default; }
 .diff-stats { padding: 7px 12px; border-top: 1px solid var(--border); display: flex; gap: 14px; font-size: 10px; font-family: var(--mono); color: var(--muted); }
 .diff-stats b { color: var(--text); }
 .history { margin-top: 8px; }
@@ -108,7 +109,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
   <header class="page-header">
     <div class="exp-label">Experiment 01</div>
     <h1>Embeddings</h1>
-    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.3</b></p>
+    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.4</b></p>
   </header>
 
   <div class="status-bar">
@@ -167,11 +168,11 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
         <div class="vec-vis" id="vecVisB"></div>
         <div class="vec-stats" id="vecStatsB"></div>
       </div>
-    </div>
-    <div class="diff-card">
-      <div class="diff-hdr">Difference |A − B| — darker = dimensions where phrases diverge most</div>
-      <div class="diff-vis" id="diffVis"></div>
-      <div class="diff-stats" id="diffStats"></div>
+      <div class="diff-card">
+        <div class="vec-hdr"><span>|A − B|</span><span class="vec-dims">difference</span></div>
+        <div class="diff-vis" id="diffVis"></div>
+        <div class="diff-stats" id="diffStats"></div>
+      </div>
     </div>
   </div>
 
@@ -243,13 +244,16 @@ function renderVec(container, vec, cssColor) {
 
 function renderDiff(container, a, b) {
   container.innerHTML = '';
-  const n = 384, diff = [], max = Math.max(...Array.from({length:n},(_,i)=>Math.abs(a[i]-b[i])));
+  const n = 384;
+  const diffs = Array.from({length:n}, (_,i) => Math.abs(a[i]-b[i]));
+  const max = Math.max(...diffs);
   for (let i=0; i<n; i++) {
-    const norm = Math.abs(a[i]-b[i]) / (max+1e-9);
+    const norm = diffs[i] / (max+1e-9);
     const c = document.createElement('div');
-    c.className = 'v-cell';
-    c.style.background = `hsl(${215 + norm*50}, 55%, ${88 - norm*60}%)`;
-    c.title = `dim ${i}: |Δ|=${Math.abs(a[i]-b[i]).toFixed(4)}`;
+    c.className = 'diff-cell';
+    const light = Math.round(92 - norm * 72);
+    c.style.background = `hsl(0, 0%, ${light}%)`;
+    c.title = `dim ${i}: |Δ|=${diffs[i].toFixed(4)}`;
     container.appendChild(c);
   }
 }
