@@ -57,7 +57,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
 .examples span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
 .ex-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; font-family: var(--mono); border-radius: 3px; }
 .ex-btn:hover { color: var(--accent); border-color: var(--accent); }
-.spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.spinner { width: 10px; height: 10px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
 .spinner.visible { display: block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error-msg { display: none; padding: 10px 14px; background: rgba(176,48,80,0.08); border: 1px solid rgba(176,48,80,0.25); border-radius: 4px; color: var(--accent2); font-size: 12px; font-family: var(--mono); margin-bottom: 16px; }
@@ -77,7 +77,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
 .vec-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
 .vec-dims { color: var(--accent); }
 .vec-vis { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 2px; }
-.v-cell { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; cursor: default; }
+.v-cell { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; cursor: default; }
 .vec-stats { padding: 7px 12px; border-top: 1px solid var(--border); display: flex; gap: 14px; font-size: 10px; font-family: var(--mono); color: var(--muted); }
 .vec-stats b { color: var(--text); }
 .diff-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
@@ -108,7 +108,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
   <header class="page-header">
     <div class="exp-label">Experiment 01</div>
     <h1>Embeddings</h1>
-    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.2</b></p>
+    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.3</b></p>
   </header>
 
   <div class="status-bar">
@@ -229,7 +229,7 @@ function simDesc(s) {
 
 function renderVec(container, vec, cssColor) {
   container.innerHTML = '';
-  const n = 192, min = Math.min(...vec.slice(0,n)), max = Math.max(...vec.slice(0,n));
+  const n = 384, min = Math.min(...vec.slice(0,n)), max = Math.max(...vec.slice(0,n));
   for (let i=0; i<n; i++) {
     const norm = (vec[i]-min)/(max-min+1e-9);
     const c = document.createElement('div');
@@ -243,7 +243,7 @@ function renderVec(container, vec, cssColor) {
 
 function renderDiff(container, a, b) {
   container.innerHTML = '';
-  const n = 192, diff = [], max = Math.max(...Array.from({length:n},(_,i)=>Math.abs(a[i]-b[i])));
+  const n = 384, diff = [], max = Math.max(...Array.from({length:n},(_,i)=>Math.abs(a[i]-b[i])));
   for (let i=0; i<n; i++) {
     const norm = Math.abs(a[i]-b[i]) / (max+1e-9);
     const c = document.createElement('div');
