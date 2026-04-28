@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic Search — Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f6; --surface: #ffffff; --border: #e0ddd6; --text: #1a1a1a;
+  --muted: #888880; --accent: #2a4a8a; --accent2: #b03050; --accent3: #1a7a50;
+  --tag-bg: #eeeae0; --font: 'Libre Baskerville', Georgia, serif; --mono: 'JetBrains Mono', monospace;
+}
+[data-theme="dark"] {
+  --bg: #111110; --surface: #1c1c1a; --border: #2a2a28; --text: #e8e6e0;
+  --muted: #666660; --accent: #7a9ad0; --accent2: #d06080; --accent3: #50c090; --tag-bg: #222220;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.7; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+nav { border-bottom: 1px solid var(--border); padding: 0 32px; height: 52px; display: flex; align-items: center; justify-content: space-between; }
+.nav-brand { font-size: 1.05rem; font-weight: 700; color: var(--text); text-decoration: none; }
+.nav-brand span { font-weight: 400; font-style: italic; color: var(--muted); }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-back { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; }
+.nav-back:hover { color: var(--text); }
+.theme-btn { font-family: var(--font); font-size: 12px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; cursor: pointer; border-radius: 3px; }
+main { max-width: 760px; margin: 0 auto; padding: 48px 32px 80px; }
+.page-header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.exp-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.subtitle { font-size: 0.88rem; color: var(--muted); font-family: var(--mono); }
+.status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+.dot.loading { background: #c08020; animation: pulse 1s ease-in-out infinite; }
+.dot.ready { background: var(--accent3); }
+.dot.error { background: var(--accent2); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* Two panels */
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.panel-hdr { padding: 8px 14px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.panel-hdr span.count { color: var(--accent); }
+.panel-body { padding: 12px 14px; }
+
+/* Add phrases */
+.add-row { display: flex; gap: 8px; }
+.add-input { flex: 1; font-family: var(--font); font-size: 13px; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); outline: none; }
+.add-input:focus { border-color: var(--accent); }
+button { font-family: var(--font); font-size: 13px; cursor: pointer; border: none; border-radius: 4px; padding: 7px 14px; transition: all 0.15s; }
+.btn-add { background: var(--accent); color: white; }
+.btn-add:hover { opacity: 0.88; }
+.btn-add:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-sm { font-size: 11px; font-family: var(--mono); padding: 3px 8px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 3px; }
+.btn-sm:hover { color: var(--accent2); border-color: var(--accent2); }
+
+/* Phrase list */
+.phrase-list { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto; }
+.phrase-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--tag-bg); border-radius: 4px; font-size: 12px; }
+.phrase-item span { flex: 1; font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.phrase-item .sim-badge { font-size: 11px; color: var(--muted); min-width: 40px; text-align: right; }
+.phrase-item button { padding: 1px 6px; font-size: 10px; }
+.phrase-empty { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 8px 0; font-style: italic; }
+
+/* Seed chips */
+.seed-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.seed-chip { font-family: var(--mono); font-size: 11px; padding: 3px 9px; border: 1px solid var(--border); border-radius: 3px; background: transparent; color: var(--muted); cursor: pointer; }
+.seed-chip:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Search */
+.search-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.search-input { flex: 1; font-family: var(--font); font-size: 14px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; color: var(--text); outline: none; }
+.search-input:focus { border-color: var(--accent); }
+.btn-search { background: var(--accent); color: white; padding: 10px 20px; font-size: 13px; }
+.btn-search:hover { opacity: 0.88; }
+.btn-search:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Results */
+.results-list { display: flex; flex-direction: column; gap: 6px; }
+.result-item { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 10px 14px; display: flex; align-items: center; gap: 14px; }
+.result-rank { font-family: var(--mono); font-size: 10px; color: var(--muted); min-width: 18px; }
+.result-phrase { flex: 1; font-size: 14px; }
+.result-score { font-family: var(--mono); font-size: 13px; font-weight: 500; min-width: 52px; text-align: right; }
+.result-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.result-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+.no-results { font-family: var(--mono); font-size: 12px; color: var(--muted); padding: 12px 0; }
+
+.spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.spinner.visible { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 560px) { .panels { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="/"><span>sandbox.</span>opik.net</a>
+  <div class="nav-right">
+    <a class="nav-back" href="/">← back</a>
+    <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">Dark</button>
+  </div>
+</nav>
+<main>
+  <header class="page-header">
+    <div class="exp-label">Experiment 02</div>
+    <h1>Semantic Search</h1>
+    <p class="subtitle">PGlite + pgvector + transformers.js · 100% in-browser · IndexedDB persistent · v1.0</p>
+  </header>
+
+  <div class="status-bar">
+    <div class="dot loading" id="statusDot"></div>
+    <span id="statusText">Initializing PGlite + model…</span>
+    <div class="spinner" id="spinner"></div>
+  </div>
+
+  <div class="panels">
+    <!-- Add phrases -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span>Phrase collection</span>
+        <span class="count" id="phraseCount">0 phrases</span>
+      </div>
+      <div class="panel-body">
+        <div class="add-row">
+          <input class="add-input" id="addInput" placeholder="Add a phrase…" disabled>
+          <button class="btn-add" id="addBtn" disabled>Add</button>
+        </div>
+        <div class="seed-chips" id="seedChips"></div>
+        <div class="phrase-list" id="phraseList">
+          <div class="phrase-empty">No phrases yet. Add some above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="panel">
+      <div class="panel-hdr"><span>Search</span></div>
+      <div class="panel-body">
+        <div class="search-row">
+          <input class="search-input" id="searchInput" placeholder="Search query…" disabled>
+          <button class="btn-search" id="searchBtn" disabled>Search</button>
+        </div>
+        <div class="results-list" id="resultsList">
+          <div class="no-results">Results will appear here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1/dist/transformers.min.js';
+import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/index.js';
+import { vector } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/vector/index.js';
+
+env.allowLocalModels = false;
+
+const $ = id => document.getElementById(id);
+const DIMS = 384;
+const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+
+const SEEDS = ['dog','cat','car','train','apple','music','ocean','mountain','king','queen',
+  'doctor','hospital','happy','sad','computer','phone','book','coffee','sun','moon'];
+
+let db = null;
+let extractor = null;
+let ready = false;
+
+function setStatus(msg, state='loading') {
+  $('statusDot').className = 'dot ' + state;
+  $('statusText').textContent = msg;
+}
+
+function scoreColor(s) {
+  if (s > 0.7) return 'var(--accent3)';
+  if (s > 0.4) return 'var(--accent)';
+  if (s > 0.2) return '#b08020';
+  return 'var(--muted)';
+}
+
+// Init PGlite
+setStatus('Starting PGlite…');
+try {
+  db = new PGlite({ extensions: { vector }, dataDir: 'idb://sandbox-search-v1' });
+  await db.waitReady;
+  await db.exec('CREATE EXTENSION IF NOT EXISTS vector;');
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS phrases (
+      id SERIAL PRIMARY KEY,
+      phrase TEXT UNIQUE NOT NULL,
+      embedding vector(${DIMS}) NOT NULL
+    );
+  `);
+  setStatus('PGlite ready. Loading model…');
+} catch(e) {
+  setStatus('PGlite error: ' + e.message, 'error');
+  throw e;
+}
+
+// Init model
+try {
+  extractor = await pipeline('feature-extraction', MODEL_ID, {
+    progress_callback: p => {
+      if (p.status === 'downloading')
+        setStatus('Downloading model: ' + (p.progress ? Math.round(p.progress) + '%' : '…'));
+    }
+  });
+  setStatus('Ready — add phrases, then search', 'ready');
+  ready = true;
+  $('addInput').disabled = false;
+  $('addBtn').disabled = false;
+  $('searchInput').disabled = false;
+  $('searchBtn').disabled = false;
+  await loadPhraseList();
+  renderSeeds();
+} catch(e) {
+  setStatus('Model error: ' + e.message, 'error');
+}
+
+async function embed(text) {
+  const out = await extractor(text, { pooling: 'mean', normalize: true });
+  return Array.from(out.data);
+}
+
+async function addPhrase(phrase) {
+  phrase = phrase.trim();
+  if (!phrase || !ready) return;
+  $('spinner').classList.add('visible');
+  try {
+    const vec = await embed(phrase);
+    const vecStr = '[' + vec.join(',') + ']';
+    await db.query(
+      'INSERT INTO phrases (phrase, embedding) VALUES ($1, $2) ON CONFLICT (phrase) DO NOTHING',
+      [phrase, vecStr]
+    );
+    await loadPhraseList();
+    $('addInput').value = '';
+  } catch(e) {
+    console.error(e);
+  } finally {
+    $('spinner').classList.remove('visible');
+  }
+}
+
+async function deletePhrase(id) {
+  await db.query('DELETE FROM phrases WHERE id = $1', [id]);
+  await loadPhraseList();
+}
+
+async function loadPhraseList() {
+  const res = await db.query('SELECT id, phrase FROM phrases ORDER BY id DESC');
+  const rows = res.rows;
+  $('phraseCount').textContent = rows.length + ' phrase' + (rows.length !== 1 ? 's' : '');
+  const list = $('phraseList');
+  if (!rows.length) {
+    list.innerHTML = '<div class="phrase-empty">No phrases yet. Add some above.</div>';
+    return;
+  }
+  list.innerHTML = rows.map(r =>
+    `<div class="phrase-item">
+      <span title="${r.phrase}">${r.phrase}</span>
+      <button class="btn-sm" onclick="window._del(${r.id})">✕</button>
+    </div>`
+  ).join('');
+}
+
+async function search(query) {
+  query = query.trim();
+  if (!query || !ready) return;
+  $('spinner').classList.add('visible');
+  try {
+    const vec = await embed(query);
+    const vecStr = '[' + vec.join(',') + ']';
+    const res = await db.query(
+      `SELECT phrase, 1 - (embedding <=> $1::vector) AS similarity
+       FROM phrases
+       ORDER BY embedding <=> $1::vector
+       LIMIT 10`,
+      [vecStr]
+    );
+    renderResults(res.rows);
+  } catch(e) {
+    $('resultsList').innerHTML = '<div class="no-results">Error: ' + e.message + '</div>';
+  } finally {
+    $('spinner').classList.remove('visible');
+  }
+}
+
+function renderResults(rows) {
+  const el = $('resultsList');
+  if (!rows.length) {
+    el.innerHTML = '<div class="no-results">No phrases in collection yet.</div>';
+    return;
+  }
+  el.innerHTML = rows.map((r, i) => {
+    const sim = parseFloat(r.similarity).toFixed(3);
+    const col = scoreColor(parseFloat(r.similarity));
+    const pct = Math.round(Math.max(0, parseFloat(r.similarity)) * 100);
+    return `<div class="result-item">
+      <span class="result-rank">#${i+1}</span>
+      <div style="flex:1">
+        <div class="result-phrase">${r.phrase}</div>
+        <div class="result-bar"><div class="result-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>
+      <span class="result-score" style="color:${col}">${sim}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSeeds() {
+  $('seedChips').innerHTML = SEEDS.map(s =>
+    `<button class="seed-chip" onclick="window._seed('${s}')">${s}</button>`
+  ).join('');
+}
+
+// Global handlers
+window._del = deletePhrase;
+window._seed = phrase => addPhrase(phrase);
+
+// Events
+$('addBtn').addEventListener('click', () => addPhrase($('addInput').value));
+$('addInput').addEventListener('keydown', e => { if (e.key === 'Enter') addPhrase($('addInput').value); });
+$('searchBtn').addEventListener('click', () => search($('searchInput').value));
+$('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') search($('searchInput').value); });
+</script>
+
+<script>
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? '' : 'dark');
+  document.getElementById('theme-btn').textContent = dark ? 'Dark' : 'Light';
+  localStorage.setItem('theme', dark ? 'light' : 'dark');
+}
+(function(){
+  const t = localStorage.getItem('theme') || 'light';
+  if (t === 'dark') { document.documentElement.setAttribute('data-theme','dark'); document.getElementById('theme-btn').textContent = 'Light'; }
+})();
+</script>
+</body>
+</html>
