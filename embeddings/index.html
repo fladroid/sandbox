@@ -114,7 +114,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
   <header class="page-header">
     <div class="exp-label">Experiment 01</div>
     <h1>Embeddings</h1>
-    <p class="subtitle" id="pageSubtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.9</b></p>
+    <p class="subtitle" id="pageSubtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v2.0</b></p>
   </header>
 
   <div class="status-bar">
@@ -134,8 +134,8 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
   </div>
 
   <div class="model-selector">
-    <button class="model-btn active" id="btnMiniLM" onclick="switchModel('minilm')">all-MiniLM-L6-v2 · 384d · EN</button>
-    <button class="model-btn" id="btnMulti" onclick="switchModel('multi')">multilingual-MiniLM-L12-v2 · 384d · 50 langs</button>
+    <button class="model-btn active" id="btnMiniLM">all-MiniLM-L6-v2 · 384d · EN</button>
+    <button class="model-btn" id="btnMulti">multilingual-MiniLM-L12-v2 · 384d · 50 langs</button>
     <span class="model-note" id="modelNote"></span>
   </div>
   <div class="controls">
@@ -379,6 +379,9 @@ document.querySelectorAll('.ex-btn').forEach(btn => {
     if (e.key==='Enter' && !e.shiftKey && extractors[currentModel] && !$('encodeBtn').disabled) { e.preventDefault(); encode(); }
   });
 });
+
+$('btnMiniLM').addEventListener('click', () => switchModel('minilm'));
+$('btnMulti').addEventListener('click', () => switchModel('multi'));
 </script>
 <script>
 function toggleTheme() {
