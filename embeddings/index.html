@@ -53,6 +53,11 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
 .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
 .btn-clear { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 .btn-clear:hover { color: var(--text); }
+.model-selector { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.model-btn { font-family: var(--mono); font-size: 11px; padding: 6px 12px; border-radius: 3px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.15s; }
+.model-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.model-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.model-note { font-family: var(--mono); font-size: 11px; color: var(--muted); align-self: center; }
 .examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 24px; }
 .examples span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
 .ex-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; font-family: var(--mono); border-radius: 3px; }
@@ -109,7 +114,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
   <header class="page-header">
     <div class="exp-label">Experiment 01</div>
     <h1>Embeddings</h1>
-    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.8</b></p>
+    <p class="subtitle" id="pageSubtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.9</b></p>
   </header>
 
   <div class="status-bar">
@@ -128,6 +133,11 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
     </div>
   </div>
 
+  <div class="model-selector">
+    <button class="model-btn active" id="btnMiniLM" onclick="switchModel('minilm')">all-MiniLM-L6-v2 · 384d · EN</button>
+    <button class="model-btn" id="btnMulti" onclick="switchModel('multi')">multilingual-MiniLM-L12-v2 · 384d · 50 langs</button>
+    <span class="model-note" id="modelNote"></span>
+  </div>
   <div class="controls">
     <button class="btn-primary" id="encodeBtn" disabled>Encode &amp; Compare</button>
     <div class="spinner" id="spinner"></div>
@@ -187,24 +197,52 @@ import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers
 env.allowLocalModels = false;
 
 const $ = id => document.getElementById(id);
-let extractor = null;
+const MODELS = {
+  minilm: { id: 'Xenova/all-MiniLM-L6-v2',                        label: 'all-MiniLM-L6-v2',              dims: 384 },
+  multi:  { id: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',   label: 'multilingual-MiniLM-L12-v2',    dims: 384 }
+};
+
+let extractors = {};
+let currentModel = 'minilm';
 const history = [];
 
-try {
-  extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
-    progress_callback: p => {
-      if (p.status === 'downloading') {
-        $('statusText').textContent = 'Downloading model: ' + (p.progress ? Math.round(p.progress) + '%' : '…');
+async function loadModel(key) {
+  if (extractors[key]) return extractors[key];
+  const m = MODELS[key];
+  $('statusDot').className = 'dot loading';
+  $('statusText').textContent = 'Loading ' + m.label + '…';
+  $('encodeBtn').disabled = true;
+  $('modelNote').textContent = 'downloading…';
+  try {
+    extractors[key] = await pipeline('feature-extraction', m.id, {
+      progress_callback: p => {
+        if (p.status === 'downloading') {
+          $('statusText').textContent = 'Downloading ' + m.label + ': ' + (p.progress ? Math.round(p.progress) + '%' : '…');
+        }
       }
-    }
-  });
-  $('statusDot').className = 'dot ready';
-  $('statusText').textContent = 'Model ready — all-MiniLM-L6-v2 (384 dims)';
-  $('encodeBtn').disabled = false;
-} catch(e) {
-  $('statusDot').className = 'dot error';
-  $('statusText').textContent = 'Failed to load model: ' + e.message;
+    });
+    $('statusDot').className = 'dot ready';
+    $('statusText').textContent = m.label + ' ready (' + m.dims + ' dims)';
+    $('modelNote').textContent = '';
+    $('encodeBtn').disabled = false;
+  } catch(e) {
+    $('statusDot').className = 'dot error';
+    $('statusText').textContent = 'Failed: ' + e.message;
+    $('modelNote').textContent = '';
+  }
+  return extractors[key];
 }
+
+async function switchModel(key) {
+  currentModel = key;
+  document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+  $('btn' + (key === 'minilm' ? 'MiniLM' : 'Multi')).classList.add('active');
+  $('results').classList.remove('visible');
+  await loadModel(key);
+}
+
+// Load default model on start
+await loadModel('minilm');
 
 function cosine(a, b) {
   let dot=0, na=0, nb=0;
@@ -274,13 +312,15 @@ function vecStats(vec, el) {
 async function encode() {
   const a = $('phraseA').value.trim(), b = $('phraseB').value.trim();
   if (!a || !b) return;
+  if (!extractors[currentModel]) return;
   $('errorMsg').classList.remove('visible');
   $('encodeBtn').disabled = true;
   $('spinner').classList.add('visible');
   try {
+    const ext = extractors[currentModel];
     const [outA, outB] = await Promise.all([
-      extractor(a, {pooling:'mean', normalize:true}),
-      extractor(b, {pooling:'mean', normalize:true})
+      ext(a, {pooling:'mean', normalize:true}),
+      ext(b, {pooling:'mean', normalize:true})
     ]);
     const va = Array.from(outA.data), vb = Array.from(outB.data);
     const sim = cosine(va, vb);
@@ -331,12 +371,12 @@ $('clearBtn').addEventListener('click', () => {
 document.querySelectorAll('.ex-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     $('phraseA').value = btn.dataset.a; $('phraseB').value = btn.dataset.b;
-    if (extractor && !$('encodeBtn').disabled) encode();
+    if (extractors[currentModel] && !$('encodeBtn').disabled) encode();
   });
 });
 [$('phraseA'), $('phraseB')].forEach(el => {
   el.addEventListener('keydown', e => {
-    if (e.key==='Enter' && !e.shiftKey && extractor && !$('encodeBtn').disabled) { e.preventDefault(); encode(); }
+    if (e.key==='Enter' && !e.shiftKey && extractors[currentModel] && !$('encodeBtn').disabled) { e.preventDefault(); encode(); }
   });
 });
 </script>
