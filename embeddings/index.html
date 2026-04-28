@@ -108,7 +108,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
   <header class="page-header">
     <div class="exp-label">Experiment 01</div>
     <h1>Embeddings</h1>
-    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.1</b></p>
+    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API · <b>v1.2</b></p>
   </header>
 
   <div class="status-bar">
@@ -291,6 +291,7 @@ async function encode() {
     vecStats(va, $('vecStatsA'));
     vecStats(vb, $('vecStatsB'));
     renderDiff($('diffVis'), va, vb);
+    renderDiffStats(va, vb, $('diffStats'));
     $('results').classList.add('visible');
     history.unshift({a, b, sim, col});
     if (history.length > 8) history.pop();
