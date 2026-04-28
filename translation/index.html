@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translation Quality — Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f6; --surface: #ffffff; --border: #e0ddd6; --text: #1a1a1a;
+  --muted: #888880; --accent: #2a4a8a; --accent2: #b03050; --accent3: #1a7a50;
+  --tag-bg: #eeeae0; --font: 'Libre Baskerville', Georgia, serif; --mono: 'JetBrains Mono', monospace;
+}
+[data-theme="dark"] {
+  --bg: #111110; --surface: #1c1c1a; --border: #2a2a28; --text: #e8e6e0;
+  --muted: #666660; --accent: #7a9ad0; --accent2: #d06080; --accent3: #50c090; --tag-bg: #222220;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.7; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+nav { border-bottom: 1px solid var(--border); padding: 0 32px; height: 52px; display: flex; align-items: center; justify-content: space-between; }
+.nav-brand { font-size: 1.05rem; font-weight: 700; color: var(--text); text-decoration: none; }
+.nav-brand span { font-weight: 400; font-style: italic; color: var(--muted); }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-back { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; }
+.nav-back:hover { color: var(--text); }
+.theme-btn { font-family: var(--font); font-size: 12px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; cursor: pointer; border-radius: 3px; }
+main { max-width: 800px; margin: 0 auto; padding: 48px 32px 80px; }
+.page-header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.exp-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.subtitle { font-size: 0.88rem; color: var(--muted); font-family: var(--mono); }
+.status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+.dot.loading { background: #c08020; animation: pulse 1s ease-in-out infinite; }
+.dot.ready { background: var(--accent3); }
+.dot.error { background: var(--accent2); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* Lang selector */
+.lang-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.lang-row label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+select { font-family: var(--mono); font-size: 12px; padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--text); outline: none; cursor: pointer; }
+select:focus { border-color: var(--accent); }
+
+/* Input grid */
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.input-block { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.input-block:focus-within { border-color: var(--accent); }
+.input-lbl { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.lbl-dot { width: 6px; height: 6px; border-radius: 50%; }
+.lbl-x .lbl-dot { background: var(--accent); }
+.lbl-e .lbl-dot { background: var(--accent2); }
+textarea { width: 100%; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--font); font-size: 13px; padding: 10px 12px; resize: none; height: 80px; }
+textarea::placeholder { color: var(--muted); font-style: italic; }
+
+button { font-family: var(--font); font-size: 13px; cursor: pointer; border: none; border-radius: 4px; padding: 8px 18px; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-clear { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+.controls { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.spinner.visible { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Examples */
+.examples-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; }
+.example-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 24px; }
+.ex-item { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--muted); text-align: left; }
+.ex-item:hover { border-color: var(--accent); color: var(--text); }
+.ex-lang { font-family: var(--mono); font-size: 10px; min-width: 24px; color: var(--accent); }
+.ex-texts { flex: 1; }
+.ex-x { color: var(--text); }
+.ex-e { color: var(--muted); font-style: italic; }
+
+/* Results */
+.results { display: none; }
+.results.visible { display: block; }
+.step-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px; }
+
+/* Translation output */
+.translations-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.trans-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.trans-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+.trans-body { padding: 10px 12px; font-size: 13px; min-height: 44px; font-style: italic; color: var(--muted); }
+.trans-body.filled { font-style: normal; color: var(--text); }
+
+/* Similarity cards */
+.sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.sim-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 18px 20px; }
+.sim-card-lbl { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.sim-card-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.sim-val { font-size: 2.4rem; font-weight: 700; line-height: 1; transition: color 0.3s; margin-bottom: 8px; }
+.bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.5s ease; }
+.sim-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* History */
+.history { margin-top: 8px; }
+.hist-lbl { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
+.hist-list { display: flex; flex-direction: column; gap: 6px; }
+.hist-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; font-family: var(--mono); font-size: 11px; display: grid; grid-template-columns: 24px 1fr auto auto; gap: 8px; align-items: center; cursor: pointer; }
+.hist-item:hover { border-color: var(--accent); }
+.hist-lang { color: var(--accent); }
+.hist-phrase { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-score { font-weight: 500; }
+
+.error-msg { display: none; padding: 10px 14px; background: rgba(176,48,80,0.08); border: 1px solid rgba(176,48,80,0.25); border-radius: 4px; color: var(--accent2); font-size: 12px; font-family: var(--mono); margin-bottom: 16px; }
+.error-msg.visible { display: block; }
+
+@media (max-width: 560px) { .input-grid, .translations-grid, .sim-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="/"><span>sandbox.</span>opik.net</a>
+  <div class="nav-right">
+    <a class="nav-back" href="/">← back</a>
+    <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">Dark</button>
+  </div>
+</nav>
+<main>
+  <header class="page-header">
+    <div class="exp-label">Experiment 03</div>
+    <h1>Translation Quality</h1>
+    <p class="subtitle">Helsinki-NLP opus-mt · multilingual-MiniLM · cos(X,MX) · cos(E,ME) · v1.0</p>
+  </header>
+
+  <div class="status-bar">
+    <div class="dot loading" id="statusDot"></div>
+    <span id="statusText">Loading embedding model…</span>
+    <div class="spinner" id="spinner"></div>
+  </div>
+
+  <div class="lang-row">
+    <label>Language X:</label>
+    <select id="langSelect">
+      <option value="de">German (de)</option>
+      <option value="fr">French (fr)</option>
+      <option value="es">Spanish (es)</option>
+      <option value="it">Italian (it)</option>
+      <option value="ru">Russian (ru)</option>
+      <option value="cs">Czech (cs)</option>
+      <option value="zh">Chinese (zh)</option>
+      <option value="ja">Japanese (ja)</option>
+      <option value="nl">Dutch (nl)</option>
+      <option value="pl">Polish (pl)</option>
+      <option value="uk">Ukrainian (uk)</option>
+      <option value="ar">Arabic (ar)</option>
+      <option value="fi">Finnish (fi)</option>
+      <option value="hu">Hungarian (hu)</option>
+      <option value="ko">Korean (ko)</option>
+    </select>
+    <span id="modelStatus" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+  </div>
+
+  <div class="input-grid">
+    <div class="input-block lbl-x">
+      <div class="input-lbl"><span class="lbl-dot" style="background:var(--accent)"></span>X — original</div>
+      <textarea id="inputX" placeholder="Original sentence (non-English)…"></textarea>
+    </div>
+    <div class="input-block lbl-e">
+      <div class="input-lbl"><span class="lbl-dot" style="background:var(--accent2)"></span>E — reference English (Tatoeba)</div>
+      <textarea id="inputE" placeholder="Correct English translation (from Tatoeba)…"></textarea>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="runBtn" disabled>Translate &amp; Compare</button>
+    <div class="spinner" id="spinner2"></div>
+    <button class="btn-clear" id="clearBtn">clear</button>
+  </div>
+
+  <div class="examples-label">Examples (Tatoeba):</div>
+  <div class="example-list" id="exampleList"></div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results" id="results">
+    <div class="step-label">Translations by Helsinki-NLP opus-mt</div>
+    <div class="translations-grid">
+      <div class="trans-card">
+        <div class="trans-hdr">ME — X translated to English</div>
+        <div class="trans-body" id="outME">—</div>
+      </div>
+      <div class="trans-card">
+        <div class="trans-hdr">MX — E translated back to X</div>
+        <div class="trans-body" id="outMX">—</div>
+      </div>
+    </div>
+
+    <div class="step-label">Cosine similarity (multilingual-MiniLM)</div>
+    <div class="sim-grid">
+      <div class="sim-card">
+        <div class="sim-card-lbl">cos(E, ME)</div>
+        <div class="sim-card-sub">reference EN vs. model's EN translation</div>
+        <div class="sim-val" id="simEME">—</div>
+        <div class="bar-track"><div class="bar-fill" id="barEME"></div></div>
+        <div class="sim-desc" id="descEME"></div>
+      </div>
+      <div class="sim-card">
+        <div class="sim-card-lbl">cos(X, MX)</div>
+        <div class="sim-card-sub">original X vs. model's back-translation</div>
+        <div class="sim-val" id="simXMX">—</div>
+        <div class="bar-track"><div class="bar-fill" id="barXMX"></div></div>
+        <div class="sim-desc" id="descXMX"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="history" id="histSection" style="display:none">
+    <div class="hist-lbl">History</div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+
+</main>
+
+<script type="module">
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1/dist/transformers.min.js';
+env.allowLocalModels = false;
+
+const $ = id => document.getElementById(id);
+let embedder = null;
+let translators = {};
+const history = [];
+let ready = false;
+
+const LANG_MODELS = {
+  de: { src: 'Xenova/opus-mt-de-en', tgt: 'Xenova/opus-mt-en-de' },
+  fr: { src: 'Xenova/opus-mt-fr-en', tgt: 'Xenova/opus-mt-en-fr' },
+  es: { src: 'Xenova/opus-mt-es-en', tgt: 'Xenova/opus-mt-en-es' },
+  it: { src: 'Xenova/opus-mt-it-en', tgt: 'Xenova/opus-mt-en-it' },
+  ru: { src: 'Xenova/opus-mt-ru-en', tgt: 'Xenova/opus-mt-en-ru' },
+  cs: { src: 'Xenova/opus-mt-cs-en', tgt: 'Xenova/opus-mt-en-cs' },
+  zh: { src: 'Xenova/opus-mt-zh-en', tgt: 'Xenova/opus-mt-en-zh' },
+  ja: { src: 'Xenova/opus-mt-ja-en', tgt: 'Xenova/opus-mt-en-jap' },
+  nl: { src: 'Xenova/opus-mt-nl-en', tgt: 'Xenova/opus-mt-en-nl' },
+  pl: { src: 'Xenova/opus-mt-pl-en', tgt: 'Xenova/opus-mt-en-ROMANCE' }, // approx
+  uk: { src: 'Xenova/opus-mt-uk-en', tgt: 'Xenova/opus-mt-en-uk' },
+  ar: { src: 'Xenova/opus-mt-ar-en', tgt: 'Xenova/opus-mt-en-ar' },
+  fi: { src: 'Xenova/opus-mt-fi-en', tgt: 'Xenova/opus-mt-en-fi' },
+  hu: { src: 'Xenova/opus-mt-hu-en', tgt: 'Xenova/opus-mt-en-hu' },
+  ko: { src: 'Xenova/opus-mt-ko-en', tgt: null },
+};
+
+const EXAMPLES = [
+  { lang: 'de', x: 'Die Sprache ist das Haus des Seins.', e: 'Language is the house of being.' },
+  { lang: 'fr', x: "Je pense, donc je suis.", e: 'I think, therefore I am.' },
+  { lang: 'it', x: "Il gatto è sul tavolo.", e: 'The cat is on the table.' },
+  { lang: 'es', x: "El tiempo es oro.", e: 'Time is gold.' },
+  { lang: 'ru', x: "Всё своё ношу с собой.", e: 'I carry all my belongings with me.' },
+  { lang: 'cs', x: "Kde domov můj.", e: 'Where is my home.' },
+  { lang: 'zh', x: "学而时习之，不亦说乎", e: 'Is it not pleasant to learn with a constant perseverance?' },
+  { lang: 'ja', x: "一期一会", e: 'One time, one meeting — treasure every encounter.' },
+];
+
+function setStatus(msg, state='loading') {
+  $('statusDot').className = 'dot ' + state;
+  $('statusText').textContent = msg;
+}
+
+function simColor(s) {
+  if (s > 0.8) return 'var(--accent3)';
+  if (s > 0.6) return 'var(--accent)';
+  if (s > 0.4) return '#b08020';
+  return 'var(--accent2)';
+}
+function simDesc(s) {
+  if (s > 0.9) return 'Excellent translation';
+  if (s > 0.75) return 'Good translation';
+  if (s > 0.55) return 'Acceptable';
+  if (s > 0.35) return 'Significant drift';
+  return 'Poor translation';
+}
+
+function cosine(a, b) {
+  let dot=0, na=0, nb=0;
+  for (let i=0; i<a.length; i++) { dot+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i]; }
+  return dot/(Math.sqrt(na)*Math.sqrt(nb));
+}
+
+// Load embedder
+try {
+  setStatus('Loading multilingual-MiniLM…');
+  embedder = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2', {
+    progress_callback: p => {
+      if (p.status === 'downloading')
+        setStatus('Downloading embedding model: ' + (p.progress ? Math.round(p.progress)+'%' : '…'));
+    }
+  });
+  setStatus('Ready — select language and enter a sentence pair', 'ready');
+  ready = true;
+  $('runBtn').disabled = false;
+} catch(e) {
+  setStatus('Error: ' + e.message, 'error');
+}
+
+async function embed(text) {
+  const out = await embedder(text, { pooling: 'mean', normalize: true });
+  return Array.from(out.data);
+}
+
+async function getTranslator(modelId) {
+  if (!modelId) return null;
+  if (translators[modelId]) return translators[modelId];
+  $('modelStatus').textContent = 'Loading ' + modelId.split('/')[1] + '…';
+  try {
+    translators[modelId] = await pipeline('translation', modelId, {
+      progress_callback: p => {
+        if (p.status === 'downloading')
+          $('modelStatus').textContent = 'Downloading ' + modelId.split('/')[1] + ': ' + (p.progress ? Math.round(p.progress)+'%' : '…');
+      }
+    });
+    $('modelStatus').textContent = modelId.split('/')[1] + ' ✓';
+  } catch(e) {
+    $('modelStatus').textContent = 'Failed: ' + e.message;
+    translators[modelId] = null;
+  }
+  return translators[modelId];
+}
+
+async function translate(text, modelId) {
+  const t = await getTranslator(modelId);
+  if (!t) return '[model not available]';
+  try {
+    const out = await t(text, { max_new_tokens: 256 });
+    return out[0].translation_text;
+  } catch(e) {
+    return '[error: ' + e.message + ']';
+  }
+}
+
+async function run() {
+  const X = $('inputX').value.trim();
+  const E = $('inputE').value.trim();
+  const lang = $('langSelect').value;
+  if (!X || !E) return;
+
+  $('errorMsg').classList.remove('visible');
+  $('runBtn').disabled = true;
+  $('spinner2').classList.add('visible');
+  $('results').classList.remove('visible');
+
+  try {
+    const models = LANG_MODELS[lang];
+
+    // Step 1: translate
+    setStatus('Translating X → English…', 'loading');
+    const ME = await translate(X, models.src);
+    $('outME').textContent = ME;
+    $('outME').classList.add('filled');
+
+    let MX = '—';
+    if (models.tgt) {
+      setStatus('Translating E → ' + lang + '…', 'loading');
+      MX = await translate(E, models.tgt);
+    } else {
+      MX = '[no model available for EN→' + lang + ']';
+    }
+    $('outMX').textContent = MX;
+    $('outMX').classList.add('filled');
+
+    // Step 2: embed all 4
+    setStatus('Computing embeddings…', 'loading');
+    const [vecX, vecE, vecME, vecMX] = await Promise.all([
+      embed(X), embed(E), embed(ME), embed(MX)
+    ]);
+
+    const simEME = cosine(vecE, vecME);
+    const simXMX = models.tgt ? cosine(vecX, vecMX) : null;
+
+    // Show results
+    function showSim(valEl, barEl, descEl, sim) {
+      const col = simColor(sim);
+      valEl.textContent = sim.toFixed(4);
+      valEl.style.color = col;
+      barEl.style.width = Math.round(((sim+1)/2)*100) + '%';
+      barEl.style.background = col;
+      descEl.textContent = simDesc(sim);
+    }
+
+    showSim($('simEME'), $('barEME'), $('descEME'), simEME);
+    if (simXMX !== null) {
+      showSim($('simXMX'), $('barXMX'), $('descXMX'), simXMX);
+    } else {
+      $('simXMX').textContent = 'N/A';
+      $('descXMX').textContent = 'no EN→' + lang + ' model';
+    }
+
+    $('results').classList.add('visible');
+    setStatus('Done', 'ready');
+
+    // History
+    history.unshift({ lang, x: X.slice(0,40), e: E.slice(0,40), simEME, simXMX });
+    if (history.length > 8) history.pop();
+    renderHistory();
+
+  } catch(e) {
+    $('errorMsg').textContent = 'Error: ' + e.message;
+    $('errorMsg').classList.add('visible');
+    setStatus('Error', 'error');
+  } finally {
+    $('runBtn').disabled = false;
+    $('spinner2').classList.remove('visible');
+  }
+}
+
+function renderHistory() {
+  const sec = $('histSection'), lst = $('histList');
+  if (!history.length) { sec.style.display='none'; return; }
+  sec.style.display='block';
+  lst.innerHTML = history.map(h => {
+    const col1 = simColor(h.simEME);
+    const col2 = h.simXMX !== null ? simColor(h.simXMX) : 'var(--muted)';
+    return `<div class="hist-item">
+      <span class="hist-lang">${h.lang}</span>
+      <span class="hist-phrase">${h.x}</span>
+      <span class="hist-score" style="color:${col1}">E:ME ${h.simEME.toFixed(3)}</span>
+      <span class="hist-score" style="color:${col2}">X:MX ${h.simXMX !== null ? h.simXMX.toFixed(3) : 'N/A'}</span>
+    </div>`;
+  }).join('');
+}
+
+// Examples
+function renderExamples() {
+  $('exampleList').innerHTML = EXAMPLES.map((ex, i) =>
+    `<button class="ex-item" data-i="${i}">
+      <span class="ex-lang">${ex.lang}</span>
+      <span class="ex-texts"><span class="ex-x">${ex.x}</span> <span class="ex-e">/ ${ex.e}</span></span>
+    </button>`
+  ).join('');
+  $('exampleList').querySelectorAll('.ex-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ex = EXAMPLES[btn.dataset.i];
+      $('langSelect').value = ex.lang;
+      $('inputX').value = ex.x;
+      $('inputE').value = ex.e;
+    });
+  });
+}
+renderExamples();
+
+$('runBtn').addEventListener('click', run);
+$('clearBtn').addEventListener('click', () => {
+  $('inputX').value = ''; $('inputE').value = '';
+  $('results').classList.remove('visible');
+  $('outME').textContent = '—'; $('outMX').textContent = '—';
+  $('outME').classList.remove('filled'); $('outMX').classList.remove('filled');
+});
+</script>
+
+<script>
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? '' : 'dark');
+  document.getElementById('theme-btn').textContent = dark ? 'Dark' : 'Light';
+  localStorage.setItem('theme', dark ? 'light' : 'dark');
+}
+(function(){
+  const t = localStorage.getItem('theme') || 'light';
+  if (t === 'dark') { document.documentElement.setAttribute('data-theme','dark'); document.getElementById('theme-btn').textContent='Light'; }
+})();
+</script>
+</body>
+</html>
