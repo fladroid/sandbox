@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embeddings — Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f6; --surface: #ffffff; --border: #e0ddd6; --text: #1a1a1a;
+  --muted: #888880; --accent: #2a4a8a; --accent2: #b03050; --accent3: #1a7a50;
+  --tag-bg: #eeeae0; --font: 'Libre Baskerville', Georgia, serif; --mono: 'JetBrains Mono', monospace;
+}
+[data-theme="dark"] {
+  --bg: #111110; --surface: #1c1c1a; --border: #2a2a28; --text: #e8e6e0;
+  --muted: #666660; --accent: #7a9ad0; --accent2: #d06080; --accent3: #50c090; --tag-bg: #222220;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.7; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+nav { border-bottom: 1px solid var(--border); padding: 0 32px; height: 52px; display: flex; align-items: center; justify-content: space-between; }
+.nav-brand { font-size: 1.05rem; font-weight: 700; color: var(--text); text-decoration: none; }
+.nav-brand span { font-weight: 400; font-style: italic; color: var(--muted); }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-back { font-family: var(--mono); font-size: 11px; color: var(--muted); text-decoration: none; }
+.nav-back:hover { color: var(--text); }
+.theme-btn { font-family: var(--font); font-size: 12px; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; cursor: pointer; border-radius: 3px; }
+.theme-btn:hover { color: var(--text); }
+main { max-width: 760px; margin: 0 auto; padding: 48px 32px 80px; }
+.page-header { margin-bottom: 36px; border-bottom: 1px solid var(--border); padding-bottom: 24px; }
+.exp-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
+.subtitle { font-size: 0.9rem; color: var(--muted); font-family: var(--mono); }
+.status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+.dot.loading { background: #c08020; animation: pulse 1s ease-in-out infinite; }
+.dot.ready { background: var(--accent3); }
+.dot.error { background: var(--accent2); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.phrase-block { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; transition: border-color 0.2s; }
+.phrase-block:focus-within { border-color: var(--accent); }
+.phrase-label { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.col-dot { width: 6px; height: 6px; border-radius: 50%; }
+.phrase-a .col-dot { background: var(--accent); }
+.phrase-b .col-dot { background: var(--accent2); }
+textarea { width: 100%; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--font); font-size: 14px; padding: 10px 12px; resize: none; height: 64px; }
+textarea::placeholder { color: var(--muted); font-style: italic; }
+.controls { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+button { font-family: var(--font); font-size: 13px; cursor: pointer; border: none; border-radius: 4px; padding: 8px 18px; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-clear { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-clear:hover { color: var(--text); }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 24px; }
+.examples span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.ex-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 4px 10px; font-size: 11px; font-family: var(--mono); border-radius: 3px; }
+.ex-btn:hover { color: var(--accent); border-color: var(--accent); }
+.spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.spinner.visible { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-msg { display: none; padding: 10px 14px; background: rgba(176,48,80,0.08); border: 1px solid rgba(176,48,80,0.25); border-radius: 4px; color: var(--accent2); font-size: 12px; font-family: var(--mono); margin-bottom: 16px; }
+.error-msg.visible { display: block; }
+.results { display: none; flex-direction: column; gap: 14px; }
+.results.visible { display: flex; }
+.sim-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 20px 24px; display: flex; align-items: center; gap: 24px; }
+.sim-left { min-width: 100px; }
+.sim-lbl { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.sim-val { font-size: 2.8rem; font-weight: 700; line-height: 1; transition: color 0.4s; }
+.sim-right { flex: 1; }
+.bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width 0.5s ease, background 0.4s; }
+.sim-desc { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.vecs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vec-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.vec-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+.vec-dims { color: var(--accent); }
+.vec-vis { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 2px; }
+.v-cell { width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0; cursor: default; }
+.vec-stats { padding: 7px 12px; border-top: 1px solid var(--border); display: flex; gap: 14px; font-size: 10px; font-family: var(--mono); color: var(--muted); }
+.vec-stats b { color: var(--text); }
+.diff-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+.diff-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+.diff-vis { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 2px; }
+.history { margin-top: 8px; }
+.hist-lbl { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.hist-list { display: flex; flex-direction: column; gap: 6px; }
+.hist-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 7px 12px; display: flex; align-items: center; gap: 12px; font-size: 12px; cursor: pointer; transition: border-color 0.15s; font-family: var(--mono); }
+.hist-item:hover { border-color: var(--accent); }
+.h-sim { font-family: var(--font); font-size: 1.05rem; font-weight: 700; min-width: 54px; }
+.h-txt { flex: 1; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.h-txt em { color: var(--text); font-style: normal; }
+@media (max-width: 520px) { .input-row, .vecs-grid { grid-template-columns: 1fr; } .sim-val { font-size: 2rem; } }
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="/"><span>sandbox.</span>opik.net</a>
+  <div class="nav-right">
+    <a class="nav-back" href="/">← back</a>
+    <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">Dark</button>
+  </div>
+</nav>
+<main>
+  <header class="page-header">
+    <div class="exp-label">Experiment 01</div>
+    <h1>Embeddings</h1>
+    <p class="subtitle">all-MiniLM-L6-v2 · 384 dims · runs entirely in browser · no server, no API</p>
+  </header>
+
+  <div class="status-bar">
+    <div class="dot loading" id="statusDot"></div>
+    <span id="statusText">Loading model… first load ~23MB, cached after</span>
+  </div>
+
+  <div class="input-row">
+    <div class="phrase-block phrase-a">
+      <div class="phrase-label"><span class="col-dot"></span>Phrase A</div>
+      <textarea id="phraseA" placeholder="first phrase…">king</textarea>
+    </div>
+    <div class="phrase-block phrase-b">
+      <div class="phrase-label"><span class="col-dot"></span>Phrase B</div>
+      <textarea id="phraseB" placeholder="second phrase…">queen</textarea>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-primary" id="encodeBtn" disabled>Encode &amp; Compare</button>
+    <div class="spinner" id="spinner"></div>
+    <button class="btn-clear" id="clearBtn">clear</button>
+  </div>
+
+  <div class="examples">
+    <span>try:</span>
+    <button class="ex-btn" data-a="dog" data-b="cat">dog / cat</button>
+    <button class="ex-btn" data-a="Paris is to France" data-b="Berlin is to Germany">analogy</button>
+    <button class="ex-btn" data-a="I love you" data-b="Te amo">EN/ES</button>
+    <button class="ex-btn" data-a="bank (river)" data-b="bank (finance)">polysemy</button>
+    <button class="ex-btn" data-a="happy" data-b="sad">antonyms</button>
+    <button class="ex-btn" data-a="machine learning" data-b="deep learning">ML concepts</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results" id="results">
+    <div class="sim-card">
+      <div class="sim-left">
+        <div class="sim-lbl">Cosine similarity</div>
+        <div class="sim-val" id="simVal">—</div>
+      </div>
+      <div class="sim-right">
+        <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+        <div class="sim-desc" id="simDesc"></div>
+      </div>
+    </div>
+    <div class="vecs-grid">
+      <div class="vec-card">
+        <div class="vec-hdr"><span>Vector A</span><span class="vec-dims">384 dims</span></div>
+        <div class="vec-vis" id="vecVisA"></div>
+        <div class="vec-stats" id="vecStatsA"></div>
+      </div>
+      <div class="vec-card">
+        <div class="vec-hdr"><span>Vector B</span><span class="vec-dims">384 dims</span></div>
+        <div class="vec-vis" id="vecVisB"></div>
+        <div class="vec-stats" id="vecStatsB"></div>
+      </div>
+    </div>
+    <div class="diff-card">
+      <div class="diff-hdr">Difference |A − B| — darker = dimensions where phrases diverge most</div>
+      <div class="diff-vis" id="diffVis"></div>
+    </div>
+  </div>
+
+  <div class="history" id="historySection" style="display:none">
+    <div class="hist-lbl">History</div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+</main>
+
+<script type="module">
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1/dist/transformers.min.js';
+env.allowLocalModels = false;
+
+const $ = id => document.getElementById(id);
+let extractor = null;
+const history = [];
+
+try {
+  extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+    progress_callback: p => {
+      if (p.status === 'downloading') {
+        $('statusText').textContent = 'Downloading model: ' + (p.progress ? Math.round(p.progress) + '%' : '…');
+      }
+    }
+  });
+  $('statusDot').className = 'dot ready';
+  $('statusText').textContent = 'Model ready — all-MiniLM-L6-v2 (384 dims)';
+  $('encodeBtn').disabled = false;
+} catch(e) {
+  $('statusDot').className = 'dot error';
+  $('statusText').textContent = 'Failed to load model: ' + e.message;
+}
+
+function cosine(a, b) {
+  let dot=0, na=0, nb=0;
+  for (let i=0; i<a.length; i++) { dot+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i]; }
+  return dot / (Math.sqrt(na)*Math.sqrt(nb));
+}
+
+function simColor(s) {
+  if (s > 0.8) return 'var(--accent3)';
+  if (s > 0.5) return 'var(--accent)';
+  if (s > 0.2) return '#b08020';
+  return 'var(--accent2)';
+}
+
+function simDesc(s) {
+  if (s > 0.9) return 'Nearly identical meaning';
+  if (s > 0.75) return 'Very similar';
+  if (s > 0.5) return 'Related concepts';
+  if (s > 0.25) return 'Weakly related';
+  if (s > 0) return 'Little in common';
+  return 'Opposite / unrelated';
+}
+
+function renderVec(container, vec, cssColor) {
+  container.innerHTML = '';
+  const n = 192, min = Math.min(...vec.slice(0,n)), max = Math.max(...vec.slice(0,n));
+  for (let i=0; i<n; i++) {
+    const norm = (vec[i]-min)/(max-min+1e-9);
+    const c = document.createElement('div');
+    c.className = 'v-cell';
+    c.style.background = cssColor;
+    c.style.opacity = 0.1 + norm*0.9;
+    c.title = `dim ${i}: ${vec[i].toFixed(4)}`;
+    container.appendChild(c);
+  }
+}
+
+function renderDiff(container, a, b) {
+  container.innerHTML = '';
+  const n = 192, diff = [], max = Math.max(...Array.from({length:n},(_,i)=>Math.abs(a[i]-b[i])));
+  for (let i=0; i<n; i++) {
+    const norm = Math.abs(a[i]-b[i]) / (max+1e-9);
+    const c = document.createElement('div');
+    c.className = 'v-cell';
+    c.style.background = `hsl(${215 + norm*50}, 55%, ${88 - norm*60}%)`;
+    c.title = `dim ${i}: |Δ|=${Math.abs(a[i]-b[i]).toFixed(4)}`;
+    container.appendChild(c);
+  }
+}
+
+function vecStats(vec, el) {
+  const mean = vec.reduce((a,b)=>a+b,0)/vec.length;
+  el.innerHTML = `<span>mean <b>${mean.toFixed(3)}</b></span><span>max <b>${Math.max(...vec).toFixed(3)}</b></span><span>min <b>${Math.min(...vec).toFixed(3)}</b></span>`;
+}
+
+async function encode() {
+  const a = $('phraseA').value.trim(), b = $('phraseB').value.trim();
+  if (!a || !b) return;
+  $('errorMsg').classList.remove('visible');
+  $('encodeBtn').disabled = true;
+  $('spinner').classList.add('visible');
+  try {
+    const [outA, outB] = await Promise.all([
+      extractor(a, {pooling:'mean', normalize:true}),
+      extractor(b, {pooling:'mean', normalize:true})
+    ]);
+    const va = Array.from(outA.data), vb = Array.from(outB.data);
+    const sim = cosine(va, vb);
+    const col = simColor(sim);
+    $('simVal').textContent = sim.toFixed(4);
+    $('simVal').style.color = col;
+    $('barFill').style.width = Math.round(((sim+1)/2)*100) + '%';
+    $('barFill').style.background = col;
+    $('simDesc').textContent = simDesc(sim);
+    renderVec($('vecVisA'), va, 'var(--accent)');
+    renderVec($('vecVisB'), vb, 'var(--accent2)');
+    vecStats(va, $('vecStatsA'));
+    vecStats(vb, $('vecStatsB'));
+    renderDiff($('diffVis'), va, vb);
+    $('results').classList.add('visible');
+    history.unshift({a, b, sim, col});
+    if (history.length > 8) history.pop();
+    renderHistory();
+  } catch(e) {
+    $('errorMsg').textContent = 'Error: ' + e.message;
+    $('errorMsg').classList.add('visible');
+  } finally {
+    $('encodeBtn').disabled = false;
+    $('spinner').classList.remove('visible');
+  }
+}
+
+function renderHistory() {
+  const sec = $('historySection'), lst = $('histList');
+  if (!history.length) { sec.style.display='none'; return; }
+  sec.style.display = 'block';
+  lst.innerHTML = '';
+  history.forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'hist-item';
+    el.innerHTML = `<span class="h-sim" style="color:${h.col}">${h.sim.toFixed(3)}</span><span class="h-txt"><em>${h.a}</em> · ${h.b}</span>`;
+    el.onclick = () => { $('phraseA').value = h.a; $('phraseB').value = h.b; };
+    lst.appendChild(el);
+  });
+}
+
+$('encodeBtn').addEventListener('click', encode);
+$('clearBtn').addEventListener('click', () => {
+  $('phraseA').value = ''; $('phraseB').value = '';
+  $('results').classList.remove('visible');
+});
+document.querySelectorAll('.ex-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $('phraseA').value = btn.dataset.a; $('phraseB').value = btn.dataset.b;
+    if (extractor && !$('encodeBtn').disabled) encode();
+  });
+});
+[$('phraseA'), $('phraseB')].forEach(el => {
+  el.addEventListener('keydown', e => {
+    if (e.key==='Enter' && !e.shiftKey && extractor && !$('encodeBtn').disabled) { e.preventDefault(); encode(); }
+  });
+});
+</script>
+<script>
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme', dark ? '' : 'dark');
+  document.getElementById('theme-btn').textContent = dark ? 'Dark' : 'Light';
+  localStorage.setItem('theme', dark ? 'light' : 'dark');
+}
+(function(){
+  const t = localStorage.getItem('theme')||'light';
+  if (t==='dark') { document.documentElement.setAttribute('data-theme','dark'); document.getElementById('theme-btn').textContent='Light'; }
+})();
+</script>
+</body>
+</html>
