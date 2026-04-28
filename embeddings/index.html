@@ -83,6 +83,8 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
 .diff-card { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
 .diff-hdr { padding: 7px 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
 .diff-vis { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 2px; }
+.diff-stats { padding: 7px 12px; border-top: 1px solid var(--border); display: flex; gap: 14px; font-size: 10px; font-family: var(--mono); color: var(--muted); }
+.diff-stats b { color: var(--text); }
 .history { margin-top: 8px; }
 .hist-lbl { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
 .hist-list { display: flex; flex-direction: column; gap: 6px; }
@@ -169,6 +171,7 @@ button { font-family: var(--font); font-size: 13px; cursor: pointer; border: non
     <div class="diff-card">
       <div class="diff-hdr">Difference |A − B| — darker = dimensions where phrases diverge most</div>
       <div class="diff-vis" id="diffVis"></div>
+      <div class="diff-stats" id="diffStats"></div>
     </div>
   </div>
 
@@ -249,6 +252,14 @@ function renderDiff(container, a, b) {
     c.title = `dim ${i}: |Δ|=${Math.abs(a[i]-b[i]).toFixed(4)}`;
     container.appendChild(c);
   }
+}
+
+function renderDiffStats(a, b, el) {
+  const diff = a.map((v,i) => Math.abs(v-b[i]));
+  const mean = diff.reduce((s,v)=>s+v,0)/diff.length;
+  const max = Math.max(...diff);
+  const topDims = diff.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`dim ${x.i}`).join(', ');
+  el.innerHTML = `<span>mean Δ <b>${mean.toFixed(4)}</b></span><span>max Δ <b>${max.toFixed(4)}</b></span><span>top dims <b>${topDims}</b></span>`;
 }
 
 function vecStats(vec, el) {
